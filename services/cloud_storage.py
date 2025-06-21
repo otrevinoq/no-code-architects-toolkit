@@ -21,6 +21,7 @@ import logging
 from abc import ABC, abstractmethod
 from services.gcp_toolkit import upload_to_gcs
 from services.s3_toolkit import upload_to_s3
+from services.local_toolkit import copy_to_storage
 from config import validate_env_vars
 from urllib.parse import urlparse
 
@@ -49,6 +50,14 @@ class GCPStorageProvider(CloudStorageProvider):
 
     def upload_file(self, file_path: str) -> str:
         return upload_to_gcs(file_path, self.bucket_name)
+    
+
+class LocalStorageProvider(CloudStorageProvider):
+    def upload_file(self, file_path: str) -> str:
+        return copy_to_storage(file_path)
+    
+    
+
 
 class S3CompatibleProvider(CloudStorageProvider):
     def __init__(self):
@@ -88,6 +97,10 @@ class S3CompatibleProvider(CloudStorageProvider):
 
 def get_storage_provider() -> CloudStorageProvider:
     
+    if os.getenv('LOCAL_RESULT_STORAGE_URL'):
+
+        return LocalStorageProvider()
+    
     if os.getenv('S3_ENDPOINT_URL'):
 
         if ('digitalocean' in os.getenv('S3_ENDPOINT_URL').lower()):
@@ -99,8 +112,7 @@ def get_storage_provider() -> CloudStorageProvider:
         return S3CompatibleProvider()
     
     if os.getenv('GCP_BUCKET_NAME'):
-
-        validate_env_vars('GCP')
+        
         return GCPStorageProvider()
     
     raise ValueError(f"No cloud storage settings provided.")

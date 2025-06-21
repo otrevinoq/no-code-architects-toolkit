@@ -16,6 +16,8 @@
 
 
 
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from flask import Flask, request
 from queue import Queue
 from services.webhook import send_webhook
@@ -23,6 +25,30 @@ import threading
 import uuid
 import os
 import time
+from datetime import datetime
+
+# Asegurar que el directorio existe
+log_dir = "/var/www/html/storage/logs/"
+start_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_filename = f"toolkit_{start_time}.log"
+os.makedirs(log_dir, exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        TimedRotatingFileHandler(
+            os.path.join(log_dir, log_filename),
+            when="midnight",
+            interval=1,
+            backupCount=7,  
+            encoding='utf-8'
+        ),
+        logging.StreamHandler()  # Optional: to continue seeing logs in the console
+    ]
+)
+
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
 from app_utils import log_job_status, discover_and_register_blueprints  # Import the discover_and_register_blueprints function
 
